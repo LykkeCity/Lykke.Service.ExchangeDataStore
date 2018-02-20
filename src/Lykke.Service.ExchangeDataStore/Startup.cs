@@ -1,14 +1,14 @@
-﻿using System;
-using System.Threading.Tasks;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
+using FluentValidation.AspNetCore;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
 using Lykke.Service.ExchangeDataStore.Core.Services;
-using Lykke.Service.ExchangeDataStore.Settings;
+using Lykke.Service.ExchangeDataStore.Core.Settings;
+using Lykke.Service.ExchangeDataStore.Models.ValidationModels;
 using Lykke.Service.ExchangeDataStore.Modules;
 using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
@@ -16,6 +16,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading.Tasks;
+
+// ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable UnusedMember.Global
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace Lykke.Service.ExchangeDataStore
 {
@@ -40,11 +47,15 @@ namespace Lykke.Service.ExchangeDataStore
         {
             try
             {
-                services.AddMvc()
+                services.AddMvc(options =>
+                    {
+                        options.Filters.Add<ValidateModelAttribute>();
+                    })
+                    .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>())
                     .AddJsonOptions(options =>
                     {
                         options.SerializerSettings.ContractResolver =
-                            new Newtonsoft.Json.Serialization.DefaultContractResolver();
+                        new Newtonsoft.Json.Serialization.DefaultContractResolver();
                     });
 
                 services.AddSwaggerGen(options =>
@@ -79,7 +90,6 @@ namespace Lykke.Service.ExchangeDataStore
                     app.UseDeveloperExceptionPage();
                 }
 
-                app.UseLykkeForwardedHeaders();
                 app.UseLykkeMiddleware("ExchangeDataStore", ex => new { Message = "Technical problem" });
 
                 app.UseMvc();
@@ -171,7 +181,7 @@ namespace Lykke.Service.ExchangeDataStore
 
             aggregateLogger.AddLog(consoleLogger);
 
-            var dbLogConnectionStringManager = settings.Nested(x => x.ExchangeDataStoreService.Db.LogsConnString);
+            var dbLogConnectionStringManager = settings.Nested(x => x.ExchangeDataStoreService.AzureStorage.LogsConnString);
             var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
 
             if (string.IsNullOrEmpty(dbLogConnectionString))
@@ -184,7 +194,7 @@ namespace Lykke.Service.ExchangeDataStore
                 throw new InvalidOperationException($"LogsConnString {dbLogConnectionString} is not filled in settings");
 
             var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
-                AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "ExchangeDataStoreLog", consoleLogger),
+                AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, settings.CurrentValue.ExchangeDataStoreService.AzureStorage.LogTableName, consoleLogger),
                 consoleLogger);
 
             // Creating slack notification service, which logs own azure queue processing messages to aggregate log

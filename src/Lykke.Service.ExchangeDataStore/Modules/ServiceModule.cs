@@ -1,11 +1,18 @@
 ﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
+using AzureStorage;
+using AzureStorage.Blob;
+using AzureStorage.Tables;
 using Common.Log;
+using Lykke.Service.ExchangeDataStore.AzureRepositories.OrderBooks;
+using Lykke.Service.ExchangeDataStore.Core.Domain.OrderBooks;
 using Lykke.Service.ExchangeDataStore.Core.Services;
-using Lykke.Service.ExchangeDataStore.Settings.ServiceSettings;
+using Lykke.Service.ExchangeDataStore.Core.Services.OrderBooks;
+using Lykke.Service.ExchangeDataStore.Core.Settings.ServiceSettings;
 using Lykke.Service.ExchangeDataStore.Services;
+using Lykke.Service.ExchangeDataStore.Services.DataHarvesters;
+using Lykke.Service.ExchangeDataStore.Services.DataPersisters;
+using Lykke.Service.ExchangeDataStore.Services.Domain;
 using Lykke.SettingsReader;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Service.ExchangeDataStore.Modules
 {
@@ -13,42 +20,48 @@ namespace Lykke.Service.ExchangeDataStore.Modules
     {
         private readonly IReloadingManager<ExchangeDataStoreSettings> _settings;
         private readonly ILog _log;
-        // NOTE: you can remove it if you don't need to use IServiceCollection extensions to register service specific dependencies
-        private readonly IServiceCollection _services;
 
         public ServiceModule(IReloadingManager<ExchangeDataStoreSettings> settings, ILog log)
         {
             _settings = settings;
             _log = log;
-
-            _services = new ServiceCollection();
         }
 
         protected override void Load(ContainerBuilder builder)
         {
-            // TODO: Do not register entire settings in container, pass necessary settings to services which requires them
-            // ex:
-            //  builder.RegisterType<QuotesPublisher>()
-            //      .As<IQuotesPublisher>()
-            //      .WithParameter(TypedParameter.From(_settings.CurrentValue.QuotesPublication))
+            BindAzureRepositories(builder);
+            RegisterLocalTypes(builder);
+            RegisterLocalServices(builder);
+        }
 
-            builder.RegisterInstance(_log)
-                .As<ILog>()
-                .SingleInstance();
+        private void RegisterLocalTypes(ContainerBuilder builder)
+        {
+            builder.RegisterInstance(_log).As<ILog>().SingleInstance();
+            builder.RegisterInstance(_settings.CurrentValue.AzureStorage);
+            builder.RegisterType<OrderbookDataHarvester>().WithParameter("orderBookQueueConfig", _settings.CurrentValue.RabbitMq.OrderBooks).SingleInstance();
+            builder.RegisterType<OrderbookDataPersister>().SingleInstance();
+            builder.RegisterType<HealthService>().As<IHealthService>().SingleInstance();
+            builder.RegisterType<StartupManager>().As<IStartupManager>();
+            builder.RegisterType<ShutdownManager>().As<IShutdownManager>();
+        }
 
-            builder.RegisterType<HealthService>()
-                .As<IHealthService>()
-                .SingleInstance();
+        private void BindAzureRepositories(ContainerBuilder container)
+        {
+            var azureBlobStorage = AzureBlobStorage.Create(
+                _settings.ConnectionString(i => i.AzureStorage.EntitiesConnString));
+            container.RegisterInstance(azureBlobStorage).As<IBlobStorage>().SingleInstance();
 
-            builder.RegisterType<StartupManager>()
-                .As<IStartupManager>();
+            var orderBookSnapshotStorage = AzureTableStorage<OrderBookSnapshotEntity>.Create(
+                _settings.ConnectionString(i => i.AzureStorage.EntitiesConnString), _settings.CurrentValue.AzureStorage.EntitiesTableName, _log);
+            container.RegisterInstance(orderBookSnapshotStorage).As<INoSQLTableStorage<OrderBookSnapshotEntity>>().SingleInstance();
 
-            builder.RegisterType<ShutdownManager>()
-                .As<IShutdownManager>();
+            container.RegisterType<OrderBookRepository>().As<IOrderBookRepository>();
+            container.RegisterType<OrderBookSnapshotsRepository>().As<IOrderBookSnapshotsRepository>();
+        }
 
-            // TODO: Add your dependencies here
-
-            builder.Populate(_services);
+        private void RegisterLocalServices(ContainerBuilder builder)
+        {
+            builder.RegisterType<OrderBookService>().As<IOrderBookService>();
         }
     }
 }
