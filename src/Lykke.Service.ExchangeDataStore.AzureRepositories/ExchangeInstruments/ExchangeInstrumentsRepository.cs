@@ -33,12 +33,12 @@ namespace Lykke.Service.ExchangeDataStore.AzureRepositories.ExchangeInstruments
                 if (added)
                 {
                     await _log.WriteInfoAsync(_className, nameof(SaveIfNotExists), $"{exchangeName} & {instrument} added to ExchangeInstruments table.");
-                    _knownExchangeInstruments.AddOrUpdate(exchangeName, new List<string> { instrument }, (key, oldValue) =>
-                    {
-                        oldValue.Add(instrument);
-                        return oldValue;
-                    });
                 }
+                _knownExchangeInstruments.AddOrUpdate(exchangeName, new List<string> { instrument }, (key, oldValue) =>
+                {
+                    if(!oldValue.Contains(instrument)) oldValue.Add(instrument);
+                    return oldValue;
+                });
             }
         }
 
@@ -51,7 +51,7 @@ namespace Lykke.Service.ExchangeDataStore.AzureRepositories.ExchangeInstruments
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(_className, nameof(GetExchangeInstruments), ex);
+                await _log.WriteWarningAsync(_className, nameof(GetExchangeInstruments), ex.Message + "." + ex.InnerException?.Message);
                 throw;
             }
         }
@@ -65,7 +65,7 @@ namespace Lykke.Service.ExchangeDataStore.AzureRepositories.ExchangeInstruments
             }
             catch (Exception ex)
             {
-                await _log.WriteErrorAsync(_className, $"{nameof(GetExchangeInstruments)}, {exchangeName}", ex);
+                await _log.WriteWarningAsync(_className, $"{nameof(GetExchangeInstruments)}, {exchangeName}", ex.Message + "." + ex.InnerException?.Message);
                 throw;
             }
         }

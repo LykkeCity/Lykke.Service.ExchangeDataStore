@@ -58,12 +58,12 @@ namespace Lykke.Service.ExchangeDataStore.Modules
                 _settings.ConnectionString(i => i.AzureStorage.EntitiesConnString), _settings.CurrentValue.AzureStorage.EntitiesTableName, _log);
             container.RegisterInstance(orderBookSnapshotStorage).As<INoSQLTableStorage<OrderBookSnapshotEntity>>().SingleInstance();
 
-            var exchangeInstrumentsRepo = AzureTableStorage<ExchangeInstrumentEntity>.Create(_settings.ConnectionString(i => i.AzureStorage.EntitiesConnString), "ExchangeInstruments", _log);
-            container.RegisterInstance(exchangeInstrumentsRepo).As<INoSQLTableStorage<ExchangeInstrumentEntity>>().SingleInstance();
+            var exchangeInstrumentsStorage = AzureTableStorage<ExchangeInstrumentEntity>.Create(_settings.ConnectionString(i => i.AzureStorage.EntitiesConnString), "ExchangeInstruments", _log);
+            container.RegisterInstance(exchangeInstrumentsStorage).As<INoSQLTableStorage<ExchangeInstrumentEntity>>().SingleInstance();
 
-            container.RegisterType<OrderBookRepository>().As<IOrderBookRepository>();
-            container.RegisterType<OrderBookSnapshotsRepository>().As<IOrderBookSnapshotsRepository>();
-            container.RegisterType<ExchangeInstrumentsRepository>().As<IExchangeInstrumentsRepository>();
+            container.RegisterType<OrderBookRepository>().As<IOrderBookRepository>().SingleInstance();
+            container.RegisterType<OrderBookSnapshotsRepository>().As<IOrderBookSnapshotsRepository>().SingleInstance();
+            container.RegisterType<ExchangeInstrumentsRepository>().As<IExchangeInstrumentsRepository>().SingleInstance();
         }
 
         private void RegisterLocalServices(ContainerBuilder builder)

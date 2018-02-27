@@ -9,25 +9,24 @@ namespace Lykke.Service.ExchangeDataStore.Services.Domain
     {
         private IExchangeInstrumentsRepository _repo;
 
-
         public ExchangeInstrumentsService(IExchangeInstrumentsRepository repo)
         {
             _repo = repo;
         }
 
-        public async Task SaveIfNotExistsAsync(string exchangeName, string instrument)
+        public Task SaveIfNotExistsAsync(string exchangeName, string instrument)
         {
-            await _repo.SaveIfNotExists(exchangeName, instrument);
+            return _repo.SaveIfNotExists(exchangeName, instrument);
         }
 
-        public async Task<IEnumerable<ExchangeInstruments>> GetExchangeInstrumentsAsync()
+        public Task<IEnumerable<ExchangeInstruments>> GetExchangeInstrumentsAsync()
         {
-            return await _repo.GetExchangeInstruments();
+            return _repo.GetExchangeInstruments();
         }
 
-        public async Task<ExchangeInstruments> GetExchangeInstrumentsAsync(string exchangeName)
+        public Task<ExchangeInstruments> GetExchangeInstrumentsAsync(string exchangeName)
         {
-            return await _repo.GetExchangeInstruments(exchangeName);
+            return _repo.GetExchangeInstruments(exchangeName);
         }
     }
 }
