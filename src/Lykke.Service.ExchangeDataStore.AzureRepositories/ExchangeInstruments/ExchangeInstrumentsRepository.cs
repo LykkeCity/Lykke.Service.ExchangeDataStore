@@ -42,7 +42,7 @@ namespace Lykke.Service.ExchangeDataStore.AzureRepositories.ExchangeInstruments
             }
         }
 
-        public async Task<IEnumerable<Core.Domain.Exchange.ExchangeInstruments>> GetExchangeInstruments()
+        public async Task<IEnumerable<Core.Domain.Exchange.ExchangeInstruments>> GetExchangeInstrumentsAsync()
         {
             try
             {
@@ -51,12 +51,12 @@ namespace Lykke.Service.ExchangeDataStore.AzureRepositories.ExchangeInstruments
             }
             catch (Exception ex)
             {
-                await _log.WriteWarningAsync(_className, nameof(GetExchangeInstruments), ex.Message + "." + ex.InnerException?.Message);
+                await _log.WriteWarningAsync(_className, nameof(GetExchangeInstrumentsAsync), ex.Message + "." + ex.InnerException?.Message);
                 throw;
             }
         }
 
-        public async Task<Core.Domain.Exchange.ExchangeInstruments> GetExchangeInstruments(string exchangeName)
+        public async Task<Core.Domain.Exchange.ExchangeInstruments> GetExchangeInstrumentsAsync(string exchangeName)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace Lykke.Service.ExchangeDataStore.AzureRepositories.ExchangeInstruments
             }
             catch (Exception ex)
             {
-                await _log.WriteWarningAsync(_className, $"{nameof(GetExchangeInstruments)}, {exchangeName}", ex.Message + "." + ex.InnerException?.Message);
+                await _log.WriteWarningAsync(_className, $"{nameof(GetExchangeInstrumentsAsync)}, {exchangeName}", ex.Message + "." + ex.InnerException?.Message);
                 throw;
             }
         }

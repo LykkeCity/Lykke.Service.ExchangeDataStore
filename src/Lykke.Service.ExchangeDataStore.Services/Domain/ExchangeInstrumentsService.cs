@@ -1,13 +1,16 @@
 ﻿using Lykke.Service.ExchangeDataStore.Core.Domain.Exchange;
 using Lykke.Service.ExchangeDataStore.Core.Services.Exchange;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Lykke.Service.ExchangeDataStore.Services.Domain
 {
+    // ReSharper disable once ClassNeverInstantiated.Global - Autofac managed
     public class ExchangeInstrumentsService : IExchangeInstrumentsService
     {
-        private IExchangeInstrumentsRepository _repo;
+        private readonly IExchangeInstrumentsRepository _repo;
 
         public ExchangeInstrumentsService(IExchangeInstrumentsRepository repo)
         {
@@ -19,14 +22,12 @@ namespace Lykke.Service.ExchangeDataStore.Services.Domain
             return _repo.SaveIfNotExists(exchangeName, instrument);
         }
 
-        public Task<IEnumerable<ExchangeInstruments>> GetExchangeInstrumentsAsync()
+        public async Task<IEnumerable<ExchangeInstruments>> GetExchangeInstrumentsAsync(string exchangeName)
         {
-            return _repo.GetExchangeInstruments();
-        }
+            if (String.IsNullOrWhiteSpace(exchangeName))
+                return await _repo.GetExchangeInstrumentsAsync();
 
-        public Task<ExchangeInstruments> GetExchangeInstrumentsAsync(string exchangeName)
-        {
-            return _repo.GetExchangeInstruments(exchangeName);
+            return new[] { await _repo.GetExchangeInstrumentsAsync(exchangeName) }.AsEnumerable();
         }
     }
 }
