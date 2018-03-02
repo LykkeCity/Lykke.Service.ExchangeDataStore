@@ -1,10 +1,12 @@
 ﻿using Common.Log;
 using Lykke.Service.ExchangeDataStore.Core.Domain.OrderBooks;
+using Lykke.Service.ExchangeDataStore.Core.Services.Exchange;
 using Lykke.Service.ExchangeDataStore.Services.DataHarvesters;
 using Lykke.Service.ExchangeDataStore.Services.Domain;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace Lykke.Service.ExchangeDataStore.Services.DataPersisters
@@ -13,12 +15,14 @@ namespace Lykke.Service.ExchangeDataStore.Services.DataPersisters
     {
         private string Component = nameof(OrderbookDataPersister);
         private readonly IOrderBookSnapshotsRepository _orderBookSnapshotsRepository;
+        private readonly IExchangeInstrumentsService _exchangeInstrumentsService;
         private CancellationTokenSource cancellationSource;
         private readonly ILog _log;
 
-        public OrderbookDataPersister(IOrderBookSnapshotsRepository orderBookSnapshotsRepository, ILog log)
+        public OrderbookDataPersister(IOrderBookSnapshotsRepository orderBookSnapshotsRepository, IExchangeInstrumentsService exchangeInstrumentsService, ILog log)
         {
             _orderBookSnapshotsRepository = orderBookSnapshotsRepository;
+            _exchangeInstrumentsService = exchangeInstrumentsService;
             _log = log;
         }
 
@@ -26,6 +30,7 @@ namespace Lykke.Service.ExchangeDataStore.Services.DataPersisters
         {
             var orderBookSnapshot = new OrderBookSnapshot(orderBook);
             await _orderBookSnapshotsRepository.SaveAsync(orderBookSnapshot, cancellationSource.Token);
+            await _exchangeInstrumentsService.SaveIfNotExistsAsync(orderBook.Source, orderBook.AssetPairId);
         }
 
         public void Start()
