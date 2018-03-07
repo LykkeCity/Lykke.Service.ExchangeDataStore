@@ -1,5 +1,4 @@
-﻿using Common.Log;
-using Lykke.Service.ExchangeDataStore.Core.Domain.OrderBooks;
+﻿using Lykke.Service.ExchangeDataStore.Core.Domain.OrderBooks;
 using Lykke.Service.ExchangeDataStore.Core.Services.OrderBooks;
 using Lykke.Service.ExchangeDataStore.Models.Requests;
 using Lykke.Service.ExchangeDataStore.Models.ValidationModels;
@@ -16,11 +15,9 @@ namespace Lykke.Service.ExchangeDataStore.Controllers.Api
     public class OrderBooksController : BaseApiController
     {
         private readonly IOrderBookService _orderBookService;
-        private readonly ILog _log;
-        public OrderBooksController(IOrderBookService orderBookService, ILog log) : base(log)
+        public OrderBooksController(IOrderBookService orderBookService)
         {
             _orderBookService = orderBookService;
-            _log = log;
         }
 
         /// <summary>
@@ -32,19 +29,10 @@ namespace Lykke.Service.ExchangeDataStore.Controllers.Api
         [SwaggerOperation("GetOrderBooks")]
         [HttpGet("{exchangeName}/{instrument}")]
         [ProducesResponseType(typeof(IEnumerable<OrderBook>), (int)HttpStatusCode.OK)]
-        [ProducesResponseType(typeof(string), (int)HttpStatusCode.InternalServerError)]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
         public async Task<IActionResult> Get(OrderBookRequest request, [FromQuery]DateTime dateTimeFrom, [FromQuery]DateTime? dateTimeTo = null)
         {
-            try
-            {
-                return Ok(await _orderBookService.GetAsync(request.ExchangeName, request.Instrument, dateTimeFrom, dateTimeTo ?? DateTime.UtcNow));
-            }
-            catch (Exception ex)
-            {
-                return await LogAndReturnInternalServerError($"{request.ExchangeName}, {request.Instrument}, {dateTimeFrom}, {dateTimeTo}", ControllerContext, ex);
-            }
+            return Ok(await _orderBookService.GetAsync(request.ExchangeName, request.Instrument, dateTimeFrom, dateTimeTo ?? DateTime.UtcNow));
         }
-
     }
 }

@@ -7,7 +7,6 @@ namespace Lykke.Service.ExchangeDataStore.Core.Services.Exchange
     public interface IExchangeInstrumentsService
     {
         Task SaveIfNotExistsAsync(string exchangeName, string instrument);
-        Task<IEnumerable<ExchangeInstruments>> GetExchangeInstrumentsAsync(); 
-        Task<ExchangeInstruments> GetExchangeInstrumentsAsync(string exchangeName);
+        Task<IEnumerable<ExchangeInstruments>> GetExchangeInstrumentsAsync(string exchangeName);
     }
 }

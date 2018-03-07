@@ -1,4 +1,5 @@
 ﻿using AzureStorage;
+using Common;
 using Common.Log;
 using Lykke.Service.ExchangeDataStore.Core.Domain.Exchange;
 using System;
@@ -42,30 +43,34 @@ namespace Lykke.Service.ExchangeDataStore.AzureRepositories.ExchangeInstruments
             }
         }
 
-        public async Task<IEnumerable<Core.Domain.Exchange.ExchangeInstruments>> GetExchangeInstruments()
+        public async Task<IEnumerable<Core.Domain.Exchange.ExchangeInstruments>> GetExchangeInstrumentsAsync()
         {
             try
             {
                 var allExchangeInstruments = (await _tableStorage.GetDataAsync()).GroupBy(k => k.ExchangeName).ToDictionary(g => g.Key, g => g.Select(i => i.Instrument));
-                return allExchangeInstruments.Select(e => new Core.Domain.Exchange.ExchangeInstruments(e.Key, new ReadOnlyCollection<string>(e.Value.ToList())));
+                var result = allExchangeInstruments.Select(e => new Core.Domain.Exchange.ExchangeInstruments(e.Key, new ReadOnlyCollection<string>(e.Value.ToList()))).ToList();
+                await _log.WriteInfoAsync(_className, nameof(GetExchangeInstrumentsAsync), $"Result: {result.Select(r => r.ExchangeName + ":" + String.Join(",", r.Instruments)).ToJson()}"  );
+                return result;
             }
             catch (Exception ex)
             {
-                await _log.WriteWarningAsync(_className, nameof(GetExchangeInstruments), ex.Message + "." + ex.InnerException?.Message);
+                await _log.WriteWarningAsync(_className, nameof(GetExchangeInstrumentsAsync), ex.Message + "." + ex.InnerException?.Message);
                 throw;
             }
         }
 
-        public async Task<Core.Domain.Exchange.ExchangeInstruments> GetExchangeInstruments(string exchangeName)
+        public async Task<Core.Domain.Exchange.ExchangeInstruments> GetExchangeInstrumentsAsync(string exchangeName)
         {
             try
             {
                 var exchangeInstruments = await _tableStorage.GetDataAsync(exchangeName);
-                return new Core.Domain.Exchange.ExchangeInstruments(exchangeName, new ReadOnlyCollection<string>(exchangeInstruments.Select(s => s.Instrument).ToList()));
+                var result = new Core.Domain.Exchange.ExchangeInstruments(exchangeName, new ReadOnlyCollection<string>(exchangeInstruments.Select(s => s.Instrument).ToList()));
+                await _log.WriteInfoAsync(_className, $"{nameof(GetExchangeInstrumentsAsync)} for {exchangeName}", $"Result: {String.Join(",", result.Instruments)}");
+                return result;
             }
             catch (Exception ex)
             {
-                await _log.WriteWarningAsync(_className, $"{nameof(GetExchangeInstruments)}, {exchangeName}", ex.Message + "." + ex.InnerException?.Message);
+                await _log.WriteWarningAsync(_className, $"{nameof(GetExchangeInstrumentsAsync)}, {exchangeName}", ex.Message + "." + ex.InnerException?.Message);
                 throw;
             }
         }
