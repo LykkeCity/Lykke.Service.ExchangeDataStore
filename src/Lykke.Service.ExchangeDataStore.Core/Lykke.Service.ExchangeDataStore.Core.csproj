@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Lykke.Common" Version="4.4.2" />
+    <PackageReference Include="MessagePack" Version="1.7.3.4" />
   </ItemGroup>
 
 </Project>

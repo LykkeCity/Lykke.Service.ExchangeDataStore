@@ -5,6 +5,7 @@ using Lykke.Service.ExchangeDataStore.Core.Domain;
 using Lykke.Service.ExchangeDataStore.Core.Domain.OrderBooks;
 using Lykke.Service.ExchangeDataStore.Core.Helpers;
 using Lykke.Service.ExchangeDataStore.Core.Settings.ServiceSettings;
+using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
@@ -42,20 +43,42 @@ namespace Lykke.Service.ExchangeDataStore.AzureRepositories.OrderBooks
             await _log.WriteInfoAsync(_className, nameof(GetAsync), $"{exchangeName}, {instrument}, {from}, {to}");
 
             var partitionKey = $"{exchangeName}_{instrument}".RemoveSpecialCharacters('-', '_', '.');
-          
-            var blobNames = (await _tableStorage.GetDataAsync(partitionKey, s => s.RowKey.ParseOrderbookTimestamp() >= from && s.RowKey.ParseOrderbookTimestamp() <= to)).Select(s => s.UniqueId).OrderBy(r => r).ToList();
+
+            var fromKey = from.ToSnapshotTimestampFormat();
+            var toKey = to.ToSnapshotTimestampFormat();
+            var dateFilter = TableQuery.CombineFilters(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThanOrEqual, fromKey),TableOperators.And, 
+                             TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.LessThan, toKey));
+
+            var assetFilter = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey);
+            var query = new TableQuery<OrderBookSnapshotEntity>().Where(TableQuery.CombineFilters(assetFilter, TableOperators.And, dateFilter));
+
+            var blobNames = new List<string>();
+
+            await _tableStorage.ExecuteAsync(query, entities =>
+            {
+                if (entities == null)
+                {
+                    return;
+                }
+                foreach (var quote in entities)
+                {
+                    blobNames.Add(quote.UniqueId);
+                }
+            }, () => !cancelToken.IsCancellationRequested);
+
+            blobNames = blobNames.OrderBy(s => s).ToList();
 
             var result = new ConcurrentBag<OrderBook>();
-            
+
 
             //there is no way of downloading multiple blobs with a single request (e.g. batch download). So we try to download them in parallel with multiple simultaneous requests, each handling a batch of blobs.
             Parallel.ForEach(blobNames, new ParallelOptions() { CancellationToken = cancelToken, MaxDegreeOfParallelism = Constants.MaxDegreeOfParallelismForBlobsDownload }, 
-            (blobName) =>
+            (blobName) => 
             {
                 try
                 {
                     cancelToken.ThrowIfCancellationRequested();
-
+                    
                     var ordersStream = _blobStorage.GetAsync(_blobContainer, blobName).Result;
                     var orders = ToListOfOrderBookItems(ordersStream.ToBytes());
 

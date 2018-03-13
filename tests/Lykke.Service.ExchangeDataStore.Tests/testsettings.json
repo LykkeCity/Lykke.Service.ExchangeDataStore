@@ -1,0 +1,27 @@
+﻿{
+  "ExchangeDataStoreService": {
+    "RabbitMq": {
+      "OrderBooks": {
+        "Enabled": true,
+        "ConnectionString": "amqp://lykke.history:lykke.history@rabbit-me.lykke-me.svc.cluster.local:5672",
+        "Exchange": "lykke.exchangeconnector.orderBooks.loadTests",
+        "Queue": "lykke.exchangeconnector.orderBooks.loadTests.dataStorage"
+      }
+    },
+    "AzureStorage": {
+      "LogsConnString": "DefaultEndpointsProtocol=https;AccountName=tradingbotdev;AccountKey=QzghZuCMOgdnjDd2hUw2Li/VMmkyhi+YHW25RMg9q9ESr82HpAPpUNYuJBeJjl7G9kWKJ1by8VRZisFG42p9WQ==",
+      "LogTableName": "ExchangeDataStoreLogs",
+      "EntitiesConnString": "DefaultEndpointsProtocol=https;AccountName=tradingbotdev;AccountKey=QzghZuCMOgdnjDd2hUw2Li/VMmkyhi+YHW25RMg9q9ESr82HpAPpUNYuJBeJjl7G9kWKJ1by8VRZisFG42p9WQ==",
+      "EntitiesTableName": "orderBookSnapshots",
+      "EntitiesBlobContainerName": "orderbookssnapshots"
+    }
+  },
+  "SlackNotifications": {
+    "AzureQueue": {
+      "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=lkedevshared;AccountKey=deMBXlOj0telRE7poKY+2P9MwPcSsOJ+1IUqG6xoQ3kdDAMhxzvh22zKAXnlaKyPeF0gpbzgK4k7M9ZLdlTx+w==",
+      "QueueName": "slack-notifications"
+    },
+    "ThrottlingLimitSeconds": 60
+  }
+}
+

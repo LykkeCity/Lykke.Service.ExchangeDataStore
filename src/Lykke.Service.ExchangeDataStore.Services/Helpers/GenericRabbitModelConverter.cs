@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Lykke.Service.ExchangeDataStore.Services.Helpers
 {
-    internal sealed class GenericRabbitModelConverter<T> : IRabbitMqSerializer<T>, IMessageDeserializer<T>
+    public sealed class GenericRabbitModelConverter<T> : IRabbitMqSerializer<T>, IMessageDeserializer<T>
     {
         private readonly JsonSerializerSettings _serializeSettings = new JsonSerializerSettings
         {

@@ -1,5 +1,6 @@
 ﻿using Lykke.Service.ExchangeDataStore.Core.Domain.OrderBooks;
 using Lykke.Service.ExchangeDataStore.Core.Helpers;
+using MessagePack;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -7,20 +8,31 @@ using System.Linq;
 
 namespace Lykke.Service.ExchangeDataStore.Services.Domain
 {
-    internal sealed class OrderBookSnapshot : IOrderBookSnapshot
+    [MessagePackObject()]
+    public sealed class OrderBookSnapshot : IOrderBookSnapshot
     {
-        public string Source { get; }
+        [Key(0)]
+        public string Source { get; set; }
 
-        public string AssetPair { get; }
+        [Key(1)]
+        public string AssetPair { get; set; }
 
-        public DateTime Timestamp { get; }
+        [Key(2)]
+        public DateTime Timestamp { get; set; }
 
-        public IReadOnlyCollection<OrderBookItem> Asks { get; }
+        [Key(3)]
+        public IReadOnlyCollection<OrderBookItem> Asks { get; set; }
 
-        public IReadOnlyCollection<OrderBookItem> Bids { get; }
+        [Key(4)]
+        public IReadOnlyCollection<OrderBookItem> Bids { get; set; }
 
+        [IgnoreMember]
         public string GeneratedId { get; set; }
 
+        public OrderBookSnapshot()
+        {
+                
+        }
 
         public OrderBookSnapshot(OrderBook orderBook)
         {
